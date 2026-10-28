@@ -1,0 +1,18 @@
+{
+  "name": "brackets-markdown-reader",
+  "title": "Markdown Reader",
+  "description": "A clean, live Markdown preview for Brackets.",
+  "homepage": "https://github.com/templegit9/brackets-markdown-reader",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/templegit9/brackets-markdown-reader.git"
+  },
+  "keywords": ["brackets-extension", "markdown", "preview"],
+  "version": "1.0.6",
+  "author": "templegit9",
+  "license": "MIT",
+  "engines": {
+    "brackets": ">=1.14.0"
+  },
+  "categories": ["visual", "productivity"]
+}

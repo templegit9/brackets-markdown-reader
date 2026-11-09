@@ -2,6 +2,7 @@
 .markdown-reader-toolbar-button { position: relative; display: block; width: 24px; height: 24px; margin: 7px auto 0; border-radius: 3px; color: #aeb1b5; text-decoration: none; }
 .markdown-reader-toolbar-button::before { content: "M"; position: absolute; top: 3px; right: 2px; bottom: 3px; left: 2px; border: 2px solid currentColor; border-radius: 3px; font: 700 12px/17px Arial, sans-serif; text-align: center; }
 .markdown-reader-toolbar-button::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 7px; height: 2px; background: currentColor; box-shadow: 0 -4px 0 currentColor; }
+.markdown-reader-toolbar-button--html::before { content: "H"; }
 .markdown-reader-toolbar-button:hover, .markdown-reader-toolbar-button--active { color: #ffffff; background: #2b7dbc; }
 .markdown-reader__toolbar { height: 38px; min-height: 38px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; border-bottom: 1px solid #d8dee4; background: #f6f8fa; }
 .markdown-reader__title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; font-weight: 600; color: #57606a; }
@@ -11,6 +12,8 @@
 .markdown-reader__action:hover { background: #f3f4f6; border-color: #8c959f; }
 .markdown-reader__viewport { position: relative; flex: 1; overflow: auto; }
 .markdown-reader__content { box-sizing: border-box; max-width: 920px; margin: 0 auto; padding: 24px 40px 48px; font-size: 15px; line-height: 1.6; }
+.markdown-reader__frame { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+.markdown-reader--html .markdown-reader__content, .markdown-reader--html [data-action="theme"] { display: none; }
 .markdown-reader__empty { position: absolute; top: 42%; left: 0; right: 0; text-align: center; color: #6e7781; }
 .markdown-reader__content > :first-child { margin-top: 0; }
 .markdown-reader__content h1, .markdown-reader__content h2, .markdown-reader__content h3, .markdown-reader__content h4, .markdown-reader__content h5, .markdown-reader__content h6 { line-height: 1.25; margin: 1.45em 0 .65em; font-weight: 600; color: #1f2328; }

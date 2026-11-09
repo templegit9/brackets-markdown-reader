@@ -19,4 +19,8 @@ The preview can also be toggled with `Ctrl-Shift-M` (`Cmd-Shift-M` on macOS in s
 - Blockquotes, rules, and GitHub-style tables
 - Light and dark preview themes
 
+## HTML preview
+
+The second toolbar button (**H**), or **View → Markdown Reader: Toggle HTML Preview**, renders the current `.html`/`.htm` file in the same panel and updates as you type. Relative stylesheets, images and scripts resolve from the file's folder. The page runs in a sandboxed frame, so its scripts cannot reach Brackets.
+
 External links open in the default browser. Raw HTML is rendered as text, and unsafe URL schemes are blocked.

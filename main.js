@@ -16,14 +16,18 @@ define(function (require, exports, module) {
         $                    = window.$;
 
     var COMMAND_ID = "markdown-reader.togglePreview",
+        HTML_COMMAND_ID = "markdown-reader.toggleHtmlPreview",
         PANEL_ID = "markdown-reader.previewPanel",
         panel,
         $panel,
         $preview,
         $empty,
         $title,
+        $frame,
         $toolbarButton,
+        $htmlToolbarButton,
         isVisible = false,
+        mode = "markdown",
         activeDocument,
         observedDocument,
         renderTimer,
@@ -43,13 +47,28 @@ define(function (require, exports, module) {
             '</header>' +
             '<div class="markdown-reader__viewport">' +
                 '<article class="markdown-reader__content"></article>' +
-                '<div class="markdown-reader__empty">Open a <strong>.md</strong> file to see its formatted preview.</div>' +
+                '<iframe class="markdown-reader__frame" sandbox="allow-scripts allow-forms allow-modals" title="HTML preview"></iframe>' +
+                '<div class="markdown-reader__empty"></div>' +
             '</div>' +
         '</section>';
 
     function isMarkdown(document) {
         var path = document && document.file && document.file.fullPath || "";
         return /\.(md|markdown|mdown|mkdn|mdtxt)$/i.test(path);
+    }
+
+    function isHTML(document) {
+        var path = document && document.file && document.file.fullPath || "";
+        return /\.(html?|xhtml)$/i.test(path);
+    }
+
+    function withBaseHref(html, fullPath) {
+        // Point relative src/href values (CSS, images, scripts) at the file's folder.
+        var dir = fullPath.substring(0, fullPath.lastIndexOf("/") + 1),
+            base = '<base href="' + (dir.charAt(0) === "/" ? "file://" : "file:///") + encodeURI(dir).replace(/"/g, "%22") + '">';
+        if (/<base[\s>]/i.test(html)) { return html; }
+        if (/<head[^>]*>/i.test(html)) { return html.replace(/<head[^>]*>/i, function (tag) { return tag + base; }); }
+        return base + html;
     }
 
     function escapeHTML(value) {
@@ -203,14 +222,23 @@ define(function (require, exports, module) {
 
     function updatePreview() {
         if (!isVisible || !$preview) { return; }
-        var document = currentDocument();
+        var document = currentDocument(), htmlMode = mode === "html";
         activeDocument = document;
-        if (!isMarkdown(document)) {
-            $preview.empty(); $empty.show(); $title.text("No Markdown file selected"); return;
+        $panel.toggleClass("markdown-reader--html", htmlMode);
+        if (!(htmlMode ? isHTML(document) : isMarkdown(document))) {
+            $preview.empty(); $frame.removeAttr("srcdoc").hide(); $empty.show();
+            $empty.html("Open a <strong>" + (htmlMode ? ".html" : ".md") + "</strong> file to see its " + (htmlMode ? "rendered" : "formatted") + " preview.");
+            $title.text(htmlMode ? "No HTML file selected" : "No Markdown file selected"); return;
         }
         $empty.hide();
-        $title.text(document.file.name || "Markdown preview");
-        $preview.html(renderMarkdown(document.getText()));
+        $title.text(document.file.name || (htmlMode ? "HTML preview" : "Markdown preview"));
+        if (htmlMode) {
+            $preview.empty();
+            $frame.show().attr("srcdoc", withBaseHref(document.getText(), document.file.fullPath));
+        } else {
+            $frame.removeAttr("srcdoc").hide();
+            $preview.html(renderMarkdown(document.getText()));
+        }
     }
 
     function scheduleUpdate() {
@@ -238,6 +266,7 @@ define(function (require, exports, module) {
         $preview = $panel.find(".markdown-reader__content");
         $empty = $panel.find(".markdown-reader__empty");
         $title = $panel.find(".markdown-reader__filename");
+        $frame = $panel.find(".markdown-reader__frame");
         setTheme(theme);
         $panel.on("click", "[data-action]", function () {
             var action = $(this).data("action");
@@ -252,33 +281,44 @@ define(function (require, exports, module) {
         });
     }
 
-    function togglePreview(show) {
+    function togglePreview(show, nextMode) {
         ensurePanel();
-        isVisible = show === undefined ? !isVisible : show;
+        nextMode = nextMode || mode;
+        // Clicking the other mode's button switches the open panel instead of closing it.
+        if (show === undefined) { show = !(isVisible && nextMode === mode); }
+        mode = nextMode;
+        isVisible = show;
         if (isVisible) { panel.show(); updatePreview(); }
         else { panel.hide(); }
-        if ($toolbarButton) { $toolbarButton.toggleClass("markdown-reader-toolbar-button--active", isVisible); }
+        if ($toolbarButton) { $toolbarButton.toggleClass("markdown-reader-toolbar-button--active", isVisible && mode === "markdown"); }
+        if ($htmlToolbarButton) { $htmlToolbarButton.toggleClass("markdown-reader-toolbar-button--active", isVisible && mode === "html"); }
+    }
+
+    function makeToolbarButton($toolbar, id, extraClass, title, buttonMode) {
+        return $("<a>", {
+            id: id,
+            "class": "markdown-reader-toolbar-button" + (extraClass ? " " + extraClass : ""),
+            href: "#",
+            title: title
+        }).appendTo($toolbar).on("click", function (event) {
+            event.preventDefault();
+            togglePreview(undefined, buttonMode);
+        });
     }
 
     function addToolbarButton() {
         var $toolbar = $("#main-toolbar .buttons");
         if (!$toolbar.length || $("#markdown-reader-toolbar-button").length) { return; }
-        $toolbarButton = $("<a>", {
-            id: "markdown-reader-toolbar-button",
-            "class": "markdown-reader-toolbar-button",
-            href: "#",
-            title: "Toggle Markdown Reader preview"
-        }).appendTo($toolbar);
-        $toolbarButton.on("click", function (event) {
-            event.preventDefault();
-            togglePreview();
-        });
+        $toolbarButton = makeToolbarButton($toolbar, "markdown-reader-toolbar-button", "", "Toggle Markdown Reader preview", "markdown");
+        $htmlToolbarButton = makeToolbarButton($toolbar, "markdown-reader-html-toolbar-button", "markdown-reader-toolbar-button--html", "Toggle HTML preview", "html");
     }
 
     AppInit.appReady(function () {
-        CommandManager.register("Markdown Reader: Toggle Preview", COMMAND_ID, function () { togglePreview(); });
+        CommandManager.register("Markdown Reader: Toggle Preview", COMMAND_ID, function () { togglePreview(undefined, "markdown"); });
+        CommandManager.register("Markdown Reader: Toggle HTML Preview", HTML_COMMAND_ID, function () { togglePreview(undefined, "html"); });
         var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
         viewMenu.addMenuItem(COMMAND_ID, "Ctrl-Shift-M");
+        viewMenu.addMenuItem(HTML_COMMAND_ID);
         addToolbarButton();
         DocumentManager.on("currentDocumentChange", function () { watchCurrentDocument(); scheduleUpdate(); });
         DocumentManager.on("documentRefreshed documentSaved", scheduleUpdate);

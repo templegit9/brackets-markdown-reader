@@ -46,7 +46,7 @@ define(function (require, exports, module) {
                 '</div>' +
             '</header>' +
             '<div class="markdown-reader__viewport">' +
-                '<article class="markdown-reader__content"></article>' +
+                '<article class="markdown-reader__content" tabindex="-1"></article>' +
                 '<iframe class="markdown-reader__frame" sandbox="allow-scripts allow-forms allow-modals" title="HTML preview"></iframe>' +
                 '<div class="markdown-reader__empty"></div>' +
             '</div>' +
@@ -274,6 +274,24 @@ define(function (require, exports, module) {
             if (action === "refresh") { updatePreview(); }
             if (action === "theme") { setTheme(theme === "dark" ? "light" : "dark"); }
         });
+        // Brackets disables text selection app-wide and routes Cmd/Ctrl-C to the editor,
+        // so take focus on mousedown and copy the panel's own selection.
+        $preview.on("mousedown", function () { $preview[0].focus(); });
+        // Capture on window so this runs before Brackets' own key bindings.
+        window.addEventListener("keydown", function (event) {
+            var key = String.fromCharCode(event.which).toLowerCase(), selection = window.getSelection();
+            if (!(event.metaKey || event.ctrlKey) || event.altKey || !isVisible || !$.contains($panel[0], window.document.activeElement) && window.document.activeElement !== $preview[0]) { return; }
+            if (key === "a") {
+                event.preventDefault(); event.stopPropagation();
+                var range = window.document.createRange();
+                range.selectNodeContents($preview[0]);
+                selection.removeAllRanges(); selection.addRange(range);
+            } else if (key === "c" && selection && String(selection)) {
+                event.stopPropagation();
+                window.document.execCommand("copy");
+                event.preventDefault();
+            }
+        }, true);
         $preview.on("click", "a", function (event) {
             event.preventDefault();
             var href = $(this).attr("href");
